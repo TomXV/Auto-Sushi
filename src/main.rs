@@ -16,10 +16,11 @@ fn preprocess_image(input_path: &str, output_path: &str) -> Result<(), Box<dyn s
     Ok(())
 }
 
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 1. 画面キャプチャ
     let screen = Screen::all().unwrap();
-    let screenshot = screen[0].capture_area(790, 425, 300, 30)?;
+    let screenshot = screen[0].capture_area(772, 425, 350, 30)?;
     screenshot.save("screenshot.png")?;
     println!("Screenshot saved!");
 
@@ -30,21 +31,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 3. OCRで文字認識
     let mut tess = Tesseract::new(Some("./"), Some("eng"))?;
     tess = tess.set_image("processed_screenshot.png")?;
-    let extracted_text = tess.get_text()?;
-    println!("Extracted text: {}", extracted_text);
+    let mut extracted_text = tess.get_text()?;
+    println!("Extracted text before filter: {}", extracted_text);
 
-    // 4. 自動タイピング
+    // 4. 最初の文字が`!`なら削除（ただし、変数の中身が`!`だけの場合はそのまま）
+    if extracted_text.starts_with('!') && extracted_text.len() > 1 {
+        extracted_text = extracted_text[1..].to_string();
+    }
+    println!("Extracted text after filter: {}", extracted_text);
+
+    // 5. 自動タイピング
     let filtered_text: String = extracted_text.chars().filter(|c| c.is_ascii()).collect();
     for c in filtered_text.chars() {
         if let Some((key, shift)) = char_to_key(c) {
-            type_key(key, shift)?; // 修飾キーの有無を考慮してキー入力
-            thread::sleep(Duration::from_millis(1)); // 遅延
+            type_key(key, shift)?; // 修飾キーを考慮してキー入力
+            thread::sleep(Duration::from_millis(60)); // 遅延
         }
     }
     println!("Typing completed!");
 
     Ok(())
 }
+
 
 fn char_to_key(c: char) -> Option<(Key, bool)> {
     match c {
@@ -110,12 +118,12 @@ fn char_to_key(c: char) -> Option<(Key, bool)> {
         '7' => Some((Key::Num7, false)),
         '8' => Some((Key::Num8, false)),
         '9' => Some((Key::Num9, false)),
-        ' ' => Some((Key::Space, false)),
+        // ' ' => Some((Key::Space, false)),
         '-' => Some((Key::Minus, false)),  // ハイフン
         '?' => Some((Key::Slash, true)),  // クエスチョンマーク (Shift + /)
         '!' => Some((Key::Num1, true)),   // エクスクラメーションマーク (Shift + 1)
         ',' => Some((Key::Comma, false)),
-        '.' => Some((Key::Dot, false)),
+        // '.' => Some((Key::Dot, false)),
         _ => None,
     }
 }
