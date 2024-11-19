@@ -40,12 +40,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     println!("Extracted text after filter: {}", extracted_text);
 
-    // 5. 自動タイピング
+    // 5. 自動タイピング（リアルタイムで確認）
     let filtered_text: String = extracted_text.chars().filter(|c| c.is_ascii()).collect();
     for c in filtered_text.chars() {
         if let Some((key, shift)) = char_to_key(c) {
+            println!("Typing... : {}", c); // 現在の入力文字をコンソールに表示
             type_key(key, shift)?; // 修飾キーを考慮してキー入力
             thread::sleep(Duration::from_millis(60)); // 遅延
+        } else {
+            println!("Skipping... : {}", c); // スキップ
         }
     }
     println!("Typing completed!");
